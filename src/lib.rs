@@ -43,7 +43,9 @@ fn background_style() -> Style {
     }
 }
 
-fn write_style(_backend: &Backend, _style: &Style) {}
+fn write_style(backend: &Backend, style: &Style) {
+    backend.set_color(style.color_pair);
+}
 
 impl BufferedBackend {
     pub fn new(backend: Box<Backend>) -> Self {
