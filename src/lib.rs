@@ -1,21 +1,24 @@
+extern crate crossbeam_channel;
 extern crate cursive;
 extern crate enumset;
 extern crate smallvec;
 extern crate unicode_segmentation;
 extern crate unicode_width;
 
-use cursive::backend::Backend;
+use crossbeam_channel::{Receiver, Sender};
+use cursive::backend::{Backend, InputRequest};
+use cursive::event::Event;
+use cursive::theme;
 use cursive::theme::{ColorStyle, Style};
 use cursive::Vec2;
-
+use enumset::EnumSet;
 use std::cell::RefCell;
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 mod smallstring;
 
-use enumset::EnumSet;
 use smallstring::SmallString;
-use unicode_segmentation::UnicodeSegmentation;
-use unicode_width::UnicodeWidthStr;
 
 pub struct BufferedBackend {
     backend: Box<Backend>,
@@ -119,5 +122,78 @@ impl BufferedBackend {
                 }
             }
         }
+    }
+}
+
+impl Backend for BufferedBackend {
+    // TODO: take `self` by value?
+    // Or implement Drop?
+    /// Prepares to close the backend.
+    ///
+    /// This should clear any state in the terminal.
+    fn finish(&mut self) {
+        self.backend.finish();
+    }
+
+    /// Starts a thread to collect input and send it to the given channel.
+    ///
+    /// `event_trigger` will receive a value before any event is needed.
+    fn start_input_thread(
+        &mut self,
+        event_sink: Sender<Option<Event>>,
+        input_request: Receiver<InputRequest>,
+    ) {
+        self.backend.start_input_thread(event_sink, input_request);
+    }
+
+    /// Prepares the backend to collect input.
+    ///
+    /// This is only required for non-thread-safe backends like BearLibTerminal
+    /// where we cannot collect input in a separate thread.
+    fn prepare_input(&mut self, input_request: InputRequest) {
+        self.backend.prepare_input(input_request);
+    }
+
+    /// Refresh the screen.
+    fn refresh(&mut self) {
+        //TODO
+    }
+
+    /// Should return `true` if this backend supports colors.
+    fn has_colors(&self) -> bool {
+        self.backend.has_colors()
+    }
+
+    /// Returns the screen size.
+    fn screen_size(&self) -> Vec2 {
+        self.backend.screen_size()
+    }
+
+    /// Main method used for printing
+    fn print_at(&self, pos: Vec2, text: &str) {
+        //TODO
+    }
+
+    /// Clears the screen with the given color.
+    fn clear(&self, color: theme::Color) {
+        //TODO
+    }
+
+    /// Starts using a new color.
+    ///
+    /// This should return the previously active color.
+    fn set_color(&self, colors: theme::ColorPair) -> theme::ColorPair {
+        //TODO
+        colors
+    }
+
+    /// Enables the given effect.
+    fn set_effect(&self, effect: theme::Effect) {
+        //TODO
+    }
+
+    /// Disables the given effect.
+    fn unset_effect(&self, effect: theme::Effect) {
+        //TODO
     }
 }
