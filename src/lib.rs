@@ -43,7 +43,25 @@ fn background_style() -> Style {
     }
 }
 
+fn write_effect(backend: &Backend, effects: &EnumSet<theme::Effect>, effect: theme::Effect) {
+    if effects.contains(effect) {
+        backend.set_effect(effect);
+    } else {
+        backend.unset_effect(effect);
+    }
+}
+
+fn write_effects(backend: &Backend, effects: &EnumSet<theme::Effect>) {
+    write_effect(backend, &effects, theme::Effect::Simple);
+    write_effect(backend, &effects, theme::Effect::Reverse);
+    write_effect(backend, &effects, theme::Effect::Bold);
+    write_effect(backend, &effects, theme::Effect::Italic);
+    write_effect(backend, &effects, theme::Effect::Underline);
+}
+
 fn write_style(backend: &Backend, style: &Style) {
+    //eprintln!("{:?}", style);
+    write_effects(backend, &style.effects);
     backend.set_color(style.color_pair);
 }
 
@@ -92,7 +110,6 @@ impl BufferedBackend {
         let buf = self.buf.borrow();
 
         let mut last_style = background_style();
-        write_style(&*self.backend, &last_style);
 
         let mut current_pos = Vec2::new(0, 0);
         let mut current_text = SmallString::new();
@@ -105,8 +122,7 @@ impl BufferedBackend {
             while x < self.w {
                 if let Some((style, ref text)) = buf[y * self.w + x] {
                     if style != last_style {
-                        write_style(&*self.backend, &last_style);
-                        self.backend.print_at(current_pos, &current_text);
+                        self.output_to_backend(current_pos, &current_text, &last_style);
 
                         last_style = style;
                         current_pos.x = x;
@@ -120,8 +136,7 @@ impl BufferedBackend {
             }
 
             if !current_text.is_empty() {
-                write_style(&*self.backend, &last_style);
-                self.backend.print_at(current_pos, &current_text);
+                self.output_to_backend(current_pos, &current_text, &last_style);
             }
         }
 
@@ -129,7 +144,13 @@ impl BufferedBackend {
         self.backend.refresh();
     }
 
-    fn draw(&self, x: usize, y: usize, text: &str, style: Style) {
+    fn output_to_backend(&self, pos: Vec2, text: &str, style: &Style) {
+        write_style(&*self.backend, &style);
+        self.backend.print_at(pos, &text);
+        write_effects(&*self.backend, &EnumSet::new());
+    }
+
+    fn output_to_buffer(&self, x: usize, y: usize, text: &str, style: Style) {
         if y < self.h {
             let mut buf = self.buf.borrow_mut();
             let mut x = x;
@@ -198,7 +219,7 @@ impl Backend for BufferedBackend {
 
     /// Main method used for printing
     fn print_at(&self, pos: Vec2, text: &str) {
-        self.draw(pos.x, pos.y, text, *self.current_style.borrow());
+        self.output_to_buffer(pos.x, pos.y, text, *self.current_style.borrow());
     }
 
     /// Clears the screen with the given color.
