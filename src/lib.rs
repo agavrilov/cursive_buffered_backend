@@ -9,7 +9,6 @@ use crossbeam_channel::{Receiver, Sender};
 use cursive::backend::{Backend, InputRequest};
 use cursive::event::Event;
 use cursive::theme;
-use cursive::theme::{ColorStyle, Style};
 use cursive::Vec2;
 use enumset::EnumSet;
 use std::cell::RefCell;
@@ -25,12 +24,22 @@ pub struct BufferedBackend {
     buf: RefCell<Vec<Option<(Style, SmallString)>>>,
     w: usize,
     h: usize,
+    current_style: RefCell<Style>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Style {
+    effects: EnumSet<theme::Effect>,
+    color_pair: theme::ColorPair,
 }
 
 fn background_style() -> Style {
     Style {
         effects: EnumSet::new(),
-        color: Some(ColorStyle::background()),
+        color_pair: theme::ColorPair {
+            front: theme::Color::Dark(theme::BaseColor::Black),
+            back: theme::Color::Dark(theme::BaseColor::Black),
+        },
     }
 }
 
@@ -50,6 +59,7 @@ impl BufferedBackend {
             buf: RefCell::new(buf),
             w: w as usize,
             h: h as usize,
+            current_style: RefCell::new(style),
         }
     }
 
@@ -183,17 +193,21 @@ impl Backend for BufferedBackend {
     ///
     /// This should return the previously active color.
     fn set_color(&self, colors: theme::ColorPair) -> theme::ColorPair {
-        //TODO
-        colors
+        let mut current_style = self.current_style.borrow_mut();
+        let previous_colors = current_style.color_pair;
+        current_style.color_pair = colors;
+        previous_colors
     }
 
     /// Enables the given effect.
     fn set_effect(&self, effect: theme::Effect) {
-        //TODO
+        let mut current_style = self.current_style.borrow_mut();
+        current_style.effects.insert(effect);
     }
 
     /// Disables the given effect.
     fn unset_effect(&self, effect: theme::Effect) {
-        //TODO
+        let mut current_style = self.current_style.borrow_mut();
+        current_style.effects.remove(effect);
     }
 }
