@@ -11,7 +11,7 @@ use cursive::event::Event;
 use cursive::theme;
 use cursive::Vec2;
 use enumset::EnumSet;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -22,8 +22,7 @@ use smallstring::SmallString;
 pub struct BufferedBackend {
     backend: Box<Backend>,
     buf: RefCell<Vec<Option<(Style, SmallString)>>>,
-    w: usize,
-    h: usize,
+    size: Cell<Vec2>,
     current_style: RefCell<Style>,
 }
 
@@ -78,21 +77,23 @@ impl BufferedBackend {
         BufferedBackend {
             backend,
             buf: RefCell::new(buf),
-            w: w as usize,
-            h: h as usize,
+            size: Cell::new(screen_size),
             current_style: RefCell::new(style),
         }
     }
 
-    pub fn resize(&mut self, w: usize, h: usize) {
-        self.w = w;
-        self.h = h;
-        self.buf
-            .borrow_mut()
-            .resize(w * h, Some((background_style(), " ".into())));
-    }
+    fn resize_and_clear(&self, new_style: Style) {
+        // first, resize the buffer to match the screen size
+        let screen_size = self.backend.screen_size();
+        if screen_size != self.size.get() {
+            self.size.set(screen_size);
+            self.buf.borrow_mut().resize(
+                screen_size.x * screen_size.y,
+                Some((background_style(), " ".into())),
+            );
+        }
 
-    fn clear_with_style(&self, new_style: Style) {
+        // clear all cells
         for cell in self.buf.borrow_mut().iter_mut() {
             match *cell {
                 Some((ref mut style, ref mut text)) => {
@@ -114,14 +115,15 @@ impl BufferedBackend {
 
         let mut current_pos = Vec2::new(0, 0);
         let mut current_text = SmallString::new();
-        for y in 0..self.h {
+        let size = self.size.get();
+        for y in 0..size.y {
             current_pos.x = 0;
             current_pos.y = y;
             current_text.clear();
 
             let mut x = 0;
-            while x < self.w {
-                if let Some((style, ref text)) = buf[y * self.w + x] {
+            while x < size.x {
+                if let Some((style, ref text)) = buf[y * size.x + x] {
                     if style != last_style {
                         self.output_to_backend(current_pos, &current_text, &last_style);
 
@@ -154,19 +156,20 @@ impl BufferedBackend {
     }
 
     fn output_to_buffer(&self, x: usize, y: usize, text: &str, style: Style) {
-        if y < self.h {
+        let size = self.size.get();
+        if y < size.y {
             let mut buf = self.buf.borrow_mut();
             let mut x = x;
             for g in UnicodeSegmentation::graphemes(text, true) {
                 let width = UnicodeWidthStr::width(g);
                 if width > 0 {
-                    if x < self.w {
-                        buf[y * self.w + x] = Some((style, g.into()));
+                    if x < size.x {
+                        buf[y * size.x + x] = Some((style, g.into()));
                     }
                     x += 1;
                     for _ in 0..(width - 1) {
-                        if x < self.w {
-                            buf[y * self.w + x] = None;
+                        if x < size.x {
+                            buf[y * size.x + x] = None;
                         }
                         x += 1;
                     }
@@ -234,7 +237,7 @@ impl Backend for BufferedBackend {
                 back: color,
             },
         };
-        self.clear_with_style(style);
+        self.resize_and_clear(style);
     }
 
     /// Starts using a new color.
