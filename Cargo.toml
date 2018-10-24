@@ -5,4 +5,15 @@ authors = ["Alexander Gavrilov <agavrilov@users.noreply.github.com>"]
 license = "MIT"
 
 [dependencies]
-cursive = "0.9"
+smallvec = "0.6"
+unicode-segmentation = "1.2"
+unicode-width = "0.1"
+enumset = "0.3"
+
+[dependencies.cursive]
+version = "0.9"
+default-features = false
+features = ["termion-backend"]
+
+[patch.crates-io]
+termion = {git = 'https://github.com/agavrilov/termion', branch = 'windows'}
