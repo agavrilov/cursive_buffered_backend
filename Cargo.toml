@@ -1,0 +1,8 @@
+[package]
+name = "cursive_buffered_backend"
+version = "0.1.0"
+authors = ["Alexander Gavrilov <agavrilov@users.noreply.github.com>"]
+license = "MIT"
+
+[dependencies]
+cursive = "0.9"
