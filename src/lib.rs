@@ -96,20 +96,36 @@ impl BufferedBackend {
         let mut last_style = background_style();
         write_style(&*self.backend, &last_style);
 
-        let mut pos = Vec2::new(0, 0);
-        while pos.y < self.h {
-            pos.x = 0;
-            while pos.x < self.w {
-                if let Some((style, ref text)) = buf[pos.y * self.w + pos.x] {
+        let mut current_pos = Vec2::new(0, 0);
+        let mut current_text = SmallString::new();
+        for y in 0..self.h {
+            current_pos.x = 0;
+            current_pos.y = y;
+            current_text.clear();
+
+            let mut x = 0;
+            while x < self.w {
+                if let Some((style, ref text)) = buf[y * self.w + x] {
                     if style != last_style {
-                        write_style(&*self.backend, &style);
+                        write_style(&*self.backend, &last_style);
+
+                        self.backend.print_at(current_pos, &current_text);
+
                         last_style = style;
+                        current_pos.x = x;
+                        current_text.clear();
                     }
-                    self.backend.print_at(pos, text);
+
+                    current_text.push_str(&text);
                 }
-                pos.x += 1;
+
+                x += 1;
             }
-            pos.y += 1;
+
+            if !current_text.is_empty() {
+                write_style(&*self.backend, &last_style);
+                self.backend.print_at(current_pos, &current_text);
+            }
         }
 
         // Make sure everything is written out
