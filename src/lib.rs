@@ -43,26 +43,27 @@ fn background_style() -> Style {
     }
 }
 
-fn write_effect(backend: &Backend, effects: &EnumSet<theme::Effect>, effect: theme::Effect) {
+fn write_effect(
+    backend: &Backend,
+    effects: &EnumSet<theme::Effect>,
+    effect: theme::Effect,
+    set: bool,
+) {
     if effects.contains(effect) {
-        backend.set_effect(effect);
-    } else {
-        backend.unset_effect(effect);
+        if set {
+            backend.set_effect(effect);
+        } else {
+            backend.unset_effect(effect);
+        }
     }
 }
 
-fn write_effects(backend: &Backend, effects: &EnumSet<theme::Effect>) {
-    write_effect(backend, &effects, theme::Effect::Simple);
-    write_effect(backend, &effects, theme::Effect::Reverse);
-    write_effect(backend, &effects, theme::Effect::Bold);
-    write_effect(backend, &effects, theme::Effect::Italic);
-    write_effect(backend, &effects, theme::Effect::Underline);
-}
-
-fn write_style(backend: &Backend, style: &Style) {
-    //eprintln!("{:?}", style);
-    write_effects(backend, &style.effects);
-    backend.set_color(style.color_pair);
+fn write_effects(backend: &Backend, effects: &EnumSet<theme::Effect>, set: bool) {
+    write_effect(backend, &effects, theme::Effect::Simple, set);
+    write_effect(backend, &effects, theme::Effect::Reverse, set);
+    write_effect(backend, &effects, theme::Effect::Bold, set);
+    write_effect(backend, &effects, theme::Effect::Italic, set);
+    write_effect(backend, &effects, theme::Effect::Underline, set);
 }
 
 impl BufferedBackend {
@@ -145,9 +146,11 @@ impl BufferedBackend {
     }
 
     fn output_to_backend(&self, pos: Vec2, text: &str, style: &Style) {
-        write_style(&*self.backend, &style);
+        //eprintln!("text={:?}, style{:?}", text, style);
+        write_effects(&*self.backend, &style.effects, true);
+        self.backend.set_color(style.color_pair);
         self.backend.print_at(pos, &text);
-        write_effects(&*self.backend, &EnumSet::new());
+        write_effects(&*self.backend, &style.effects, false);
     }
 
     fn output_to_buffer(&self, x: usize, y: usize, text: &str, style: Style) {
