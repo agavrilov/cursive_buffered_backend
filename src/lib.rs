@@ -43,7 +43,7 @@ fn background_style() -> Style {
     }
 }
 
-fn write_style(backend: &Backend, style: &Style) {}
+fn write_style(_backend: &Backend, _style: &Style) {}
 
 impl BufferedBackend {
     pub fn new(backend: Box<Backend>) -> Self {
@@ -63,7 +63,7 @@ impl BufferedBackend {
         }
     }
 
-    fn clear(&self, new_style: Style) {
+    fn clear_with_style(&self, new_style: Style) {
         for cell in self.buf.borrow_mut().iter_mut() {
             match *cell {
                 Some((ref mut style, ref mut text)) => {
@@ -78,6 +78,7 @@ impl BufferedBackend {
         }
     }
 
+/*
     fn resize(&mut self, w: usize, h: usize) {
         self.w = w;
         self.h = h;
@@ -85,6 +86,7 @@ impl BufferedBackend {
             .borrow_mut()
             .resize(w * h, Some((background_style(), " ".into())));
     }
+    */
 
     fn present(&mut self) {
         let buf = self.buf.borrow();
@@ -166,7 +168,7 @@ impl Backend for BufferedBackend {
 
     /// Refresh the screen.
     fn refresh(&mut self) {
-        //TODO
+        self.present();
     }
 
     /// Should return `true` if this backend supports colors.
@@ -181,12 +183,19 @@ impl Backend for BufferedBackend {
 
     /// Main method used for printing
     fn print_at(&self, pos: Vec2, text: &str) {
-        //TODO
+        self.draw(pos.x, pos.y, text, *self.current_style.borrow());
     }
 
     /// Clears the screen with the given color.
     fn clear(&self, color: theme::Color) {
-        //TODO
+        let style = Style {
+            effects: EnumSet::new(),
+            color_pair: theme::ColorPair {
+                front: color,
+                back: color,
+            },
+        };
+        self.clear_with_style(style);
     }
 
     /// Starts using a new color.

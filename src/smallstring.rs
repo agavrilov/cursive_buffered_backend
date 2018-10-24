@@ -8,7 +8,7 @@ use std::str;
 use smallvec::SmallVec;
 
 #[derive(Clone, Default)]
-pub(crate) struct SmallString {
+pub struct SmallString {
     buffer: SmallVec<[u8; 8]>,
 }
 
@@ -77,20 +77,6 @@ impl SmallString {
             amt,
         );
         self.buffer.set_len(len + amt);
-    }
-
-    #[inline(always)]
-    unsafe fn remove_bytes(&mut self, start: usize, end: usize) {
-        assert!(start <= end);
-        assert!(end <= self.len());
-        let len = self.len();
-        let amt = end - start;
-        ptr::copy(
-            self.buffer.as_ptr().offset(end as isize),
-            self.buffer.as_mut_ptr().offset(start as isize),
-            len - end,
-        );
-        self.buffer.set_len(len - amt);
     }
 }
 
