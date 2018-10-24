@@ -65,6 +65,14 @@ impl BufferedBackend {
         }
     }
 
+    pub fn resize(&mut self, w: usize, h: usize) {
+        self.w = w;
+        self.h = h;
+        self.buf
+            .borrow_mut()
+            .resize(w * h, Some((background_style(), " ".into())));
+    }
+
     fn clear_with_style(&self, new_style: Style) {
         for cell in self.buf.borrow_mut().iter_mut() {
             match *cell {
@@ -79,16 +87,6 @@ impl BufferedBackend {
             }
         }
     }
-
-/*
-    fn resize(&mut self, w: usize, h: usize) {
-        self.w = w;
-        self.h = h;
-        self.buf
-            .borrow_mut()
-            .resize(w * h, Some((background_style(), " ".into())));
-    }
-    */
 
     fn present(&mut self) {
         let buf = self.buf.borrow();
@@ -108,7 +106,6 @@ impl BufferedBackend {
                 if let Some((style, ref text)) = buf[y * self.w + x] {
                     if style != last_style {
                         write_style(&*self.backend, &last_style);
-
                         self.backend.print_at(current_pos, &current_text);
 
                         last_style = style;
