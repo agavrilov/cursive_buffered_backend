@@ -19,7 +19,3 @@ crossbeam-channel = ">=0"
 [dependencies.cursive]
 version = ">=0.10"
 default-features = false
-features = ["termion-backend"]
-
-[patch.crates-io]
-termion = {git = 'https://github.com/agavrilov/termion', branch = 'windows'}
