@@ -4,6 +4,8 @@ extern crate enumset;
 extern crate smallvec;
 extern crate unicode_segmentation;
 extern crate unicode_width;
+#[macro_use]
+extern crate log;
 
 use crossbeam_channel::{Receiver, Sender};
 use cursive::backend::{Backend, InputRequest};
@@ -186,7 +188,9 @@ impl Backend for BufferedBackend {
     ///
     /// This should clear any state in the terminal.
     fn finish(&mut self) {
+        trace!("Start finishing BufferedBackend");
         self.backend.finish();
+        trace!("End finishing BufferedBackend");
     }
 
     /// Starts a thread to collect input and send it to the given channel.

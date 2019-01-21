@@ -1,6 +1,6 @@
 [package]
 name = "cursive_buffered_backend"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Alexander Gavrilov <agavrilov@users.noreply.github.com>"]
 license = "MIT"
 categories = ["command-line-interface"]
@@ -15,6 +15,7 @@ unicode-segmentation = ">=1"
 unicode-width = ">=0"
 enumset = ">=0"
 crossbeam-channel = ">=0"
+log = ">=0"
 
 [dependencies.cursive]
 version = ">=0.10"
