@@ -21,8 +21,8 @@ mod smallstring;
 
 use smallstring::SmallString;
 
-pub struct BufferedBackend<T: Backend> {
-    backend: T,
+pub struct BufferedBackend {
+    backend: Box<Backend>,
     buf: RefCell<Vec<Option<(Style, SmallString)>>>,
     size: Cell<Vec2>,
     current_style: RefCell<Style>,
@@ -67,8 +67,8 @@ fn write_effects(backend: &Backend, effects: &EnumSet<theme::Effect>, set: bool)
     write_effect(backend, &effects, theme::Effect::Underline, set);
 }
 
-impl<T: Backend> BufferedBackend<T> {
-    pub fn new(backend: T) -> Self {
+impl BufferedBackend {
+    pub fn new(backend: Box<Backend>) -> Self {
         let screen_size = backend.screen_size();
         let w = screen_size.x;
         let h = screen_size.y;
@@ -151,10 +151,10 @@ impl<T: Backend> BufferedBackend<T> {
 
     fn output_to_backend(&self, pos: Vec2, text: &str, style: &Style) {
         //eprintln!("text={:?}, style{:?}", text, style);
-        write_effects(&self.backend, &style.effects, true);
+        write_effects(&*self.backend, &style.effects, true);
         self.backend.set_color(style.color_pair);
         self.backend.print_at(pos, &text);
-        write_effects(&self.backend, &style.effects, false);
+        write_effects(&*self.backend, &style.effects, false);
     }
 
     fn output_to_buffer(&self, x: usize, y: usize, text: &str, style: Style) {
@@ -181,7 +181,7 @@ impl<T: Backend> BufferedBackend<T> {
     }
 }
 
-impl<T: Backend> Backend for BufferedBackend<T> {
+impl Backend for BufferedBackend {
     // TODO: take `self` by value?
     // Or implement Drop?
     /// Prepares to close the backend.
