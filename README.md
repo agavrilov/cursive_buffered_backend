@@ -12,7 +12,7 @@ Inspired by the [comment](https://gitlab.redox-os.org/redox-os/termion/issues/10
 
 ```rust
 let mut app = Cursive::new(|| {
-    let termion_backend = backend::termion::Backend::init();
+    let termion_backend = backend::termion::Backend::init().unwrap();
     let buffered_backend = cursive_buffered_backend::BufferedBackend::new(termion_backend);
     Box::new(buffered_backend)
 });
