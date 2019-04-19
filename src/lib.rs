@@ -1,14 +1,7 @@
-extern crate crossbeam_channel;
-extern crate cursive;
-extern crate enumset;
-extern crate smallvec;
-extern crate unicode_segmentation;
-extern crate unicode_width;
 #[macro_use]
 extern crate log;
 
-use crossbeam_channel::{Receiver, Sender};
-use cursive::backend::{Backend, InputRequest};
+use cursive::backend::Backend;
 use cursive::event::Event;
 use cursive::theme;
 use cursive::Vec2;
@@ -182,6 +175,10 @@ impl BufferedBackend {
 }
 
 impl Backend for BufferedBackend {
+    fn poll_event(&mut self) -> Option<Event> {
+        self.backend.poll_event()
+    }
+
     // TODO: take `self` by value?
     // Or implement Drop?
     /// Prepares to close the backend.
@@ -191,25 +188,6 @@ impl Backend for BufferedBackend {
         trace!("Start finishing BufferedBackend");
         self.backend.finish();
         trace!("End finishing BufferedBackend");
-    }
-
-    /// Starts a thread to collect input and send it to the given channel.
-    ///
-    /// `event_trigger` will receive a value before any event is needed.
-    fn start_input_thread(
-        &mut self,
-        event_sink: Sender<Option<Event>>,
-        input_request: Receiver<InputRequest>,
-    ) {
-        self.backend.start_input_thread(event_sink, input_request);
-    }
-
-    /// Prepares the backend to collect input.
-    ///
-    /// This is only required for non-thread-safe backends like BearLibTerminal
-    /// where we cannot collect input in a separate thread.
-    fn prepare_input(&mut self, input_request: InputRequest) {
-        self.backend.prepare_input(input_request);
     }
 
     /// Refresh the screen.

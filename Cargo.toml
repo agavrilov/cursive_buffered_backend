@@ -1,6 +1,6 @@
 [package]
 name = "cursive_buffered_backend"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Alexander Gavrilov <agavrilov@users.noreply.github.com>"]
 license = "MIT"
 categories = ["command-line-interface"]
@@ -8,15 +8,18 @@ keywords = ["termion", "TUI", "UI", "Cursive"]
 readme = "README.md"
 repository = "https://github.com/agavrilov/cursive_buffered_backend"
 description = "The buffering backend for any Cursive backend"
+edition = "2018"
 
 [dependencies]
 smallvec = ">=0"
 unicode-segmentation = ">=1"
 unicode-width = ">=0"
 enumset = ">=0"
-crossbeam-channel = ">=0"
 log = ">=0"
 
 [dependencies.cursive]
-version = ">=0.10"
+version = ">=0.11"
 default-features = false
+
+[badges]
+travis-ci = { repository = "agavrilov/cursive_buffered_backend"}
