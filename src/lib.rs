@@ -243,4 +243,11 @@ impl Backend for BufferedBackend {
         let mut current_style = self.current_style.borrow_mut();
         current_style.effects.remove(effect);
     }
+
+    /// Returns a name to identify the backend.
+    ///
+    /// Mostly used for debugging.
+    fn name(&self) -> &str {
+        "buffered_backend"
+    }
 }

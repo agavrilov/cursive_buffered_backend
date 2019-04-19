@@ -11,10 +11,10 @@ Inspired by the [comment](https://gitlab.redox-os.org/redox-os/termion/issues/10
 # Usage
 
 ```rust
-let mut app = Cursive::new(|| {
-    let termion_backend = backend::termion::Backend::init();
-    let buffered_backend = cursive_buffered_backend::BufferedBackend::new(termion_backend);
-    Box::new(buffered_backend)
+let mut app = Cursive::try_new(|| {
+    let crossterm_backend = backend::crossterm::Backend::init().unwrap();
+    let buffered_backend = cursive_buffered_backend::BufferedBackend::new(crossterm_backend);
+    Ok(Box::new(buffered_backend))
 });
 
 ```
