@@ -1,4 +1,6 @@
 use cursive::Vec2;
+use std::fmt::Debug;
+use std::slice::IterMut;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SetResult {
@@ -9,15 +11,15 @@ pub enum SetResult {
 
 pub struct Buffer<T>
 where
-    T: Clone + PartialEq,
+    T: Clone + PartialEq + Debug,
 {
-    pub buffer: Vec<T>,
-    pub size: Vec2,
+    buffer: Vec<T>,
+    size: Vec2,
 }
 
 impl<T> Buffer<T>
 where
-    T: Clone + PartialEq,
+    T: Clone + PartialEq + Debug,
 {
     pub fn new(size: Vec2, value: T) -> Self {
         let mut buffer: Vec<T> = Vec::new();
@@ -30,6 +32,14 @@ where
         self.size = size;
     }
 
+    pub fn size(&self) -> Vec2 {
+        self.size
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        self.buffer.iter_mut()
+    }
+
     pub fn get_item(&self, x: usize, y: usize) -> &T {
         &self.buffer[y * self.size.x + x]
     }
@@ -40,6 +50,13 @@ where
         } else {
             let pos = y * self.size.x + x;
             let old_value = &self.buffer[pos];
+            trace!(
+                "set_item: x={}, y={}, old_value={:?}, new_value={:?}",
+                x,
+                y,
+                old_value,
+                new_value
+            );
             if old_value == &new_value {
                 SetResult::SameValue
             } else {

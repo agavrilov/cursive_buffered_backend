@@ -1,7 +1,7 @@
 use std::ops::Range;
 use std::usize;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Rect {
     pub x_range: Range<usize>,
     pub y_range: Range<usize>,

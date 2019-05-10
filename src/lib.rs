@@ -87,12 +87,12 @@ impl BufferedBackend {
 
         // first, resize the buffer to match the screen size
         let screen_size = self.backend.screen_size();
-        if screen_size != buf.size {
+        if screen_size != buf.size() {
             buf.resize(screen_size, default_styled_text());
         }
 
         // clear all cells
-        for cell in buf.buffer.iter_mut() {
+        for cell in buf.iter_mut() {
             match *cell {
                 Some((ref mut style, ref mut text)) => {
                     *style = new_style;
@@ -109,6 +109,8 @@ impl BufferedBackend {
         let mut rect = self.rect_to_update.borrow_mut();
         rect.x_range = 0..screen_size.x;
         rect.y_range = 0..screen_size.y;
+
+        debug!("resize_and_clear: rect_to_update={:?}", rect);
     }
 
     fn present(&mut self) {
@@ -119,6 +121,7 @@ impl BufferedBackend {
         let mut current_pos = Vec2::new(0, 0);
         let mut current_text = SmallString::new();
         let rect_to_update = self.rect_to_update.borrow().clone();
+        debug!("present: rect_to_update={:?}", rect_to_update);
         for y in rect_to_update.y_range {
             current_pos.x = rect_to_update.x_range.start;
             current_pos.y = y;
@@ -152,7 +155,12 @@ impl BufferedBackend {
     }
 
     fn output_to_backend(&self, pos: Vec2, text: &str, style: &Style) {
-        //debug!("text={:?}, style{:?}", text, style);
+        trace!(
+            "output_to_backend: pos={:?}, text={:?}, style{:?}",
+            pos,
+            text,
+            style
+        );
         write_effects(&*self.backend, &style.effects, true);
         self.backend.set_color(style.color_pair);
         self.backend.print_at(pos, &text);
@@ -161,16 +169,21 @@ impl BufferedBackend {
 
     fn output_to_buffer(&self, x: usize, y: usize, text: &str, style: Style) {
         let mut buf = self.buf.borrow_mut();
-        let size = buf.size;
+        let size = buf.size();
         if y < size.y {
             let mut rect_to_update = self.rect_to_update.borrow_mut();
+            debug!("output_to_buffer: rect_to_update={:?}", rect_to_update);
             let mut x = x;
             for g in UnicodeSegmentation::graphemes(text, true) {
                 let width = UnicodeWidthStr::width(g);
                 if width > 0 {
                     if x < size.x {
-                        if buf.set_item(x, y, Some((style, g.into()))) == SetResult::DifferentValue
-                        {
+                        let set_result = buf.set_item(x, y, Some((style, g.into())));
+                        debug!(
+                            "output_to_buffer: x={}, y={}, set_result={:?}",
+                            x, y, set_result
+                        );
+                        if set_result == SetResult::DifferentValue {
                             // mark position for update
                             rect_to_update.encompass_pos(x, y);
                         }
@@ -178,7 +191,12 @@ impl BufferedBackend {
                     x += 1;
                     for _ in 0..(width - 1) {
                         if x < size.x {
-                            if buf.set_item(x, y, None) == SetResult::DifferentValue {
+                            let set_result = buf.set_item(x, y, None);
+                            debug!(
+                                "output_to_buffer: x={}, y={}, set_result={:?}",
+                                x, y, set_result
+                            );
+                            if set_result == SetResult::DifferentValue {
                                 // mark position for update
                                 rect_to_update.encompass_pos(x, y);
                             }
