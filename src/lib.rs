@@ -6,30 +6,31 @@ use cursive::event::Event;
 use cursive::theme;
 use cursive::Vec2;
 use enumset::EnumSet;
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+mod buffer;
 mod rect;
 mod smallstring;
 
+use buffer::{Buffer, SetResult};
 use rect::Rect;
 use smallstring::SmallString;
-
-type StyledText = Option<(Style, SmallString)>;
-
-pub struct BufferedBackend {
-    backend: Box<Backend>,
-    buf: RefCell<Vec<StyledText>>,
-    size: Cell<Vec2>,
-    current_style: RefCell<Style>,
-    rect_to_update: RefCell<Rect>,
-}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Style {
     effects: EnumSet<theme::Effect>,
     color_pair: theme::ColorPair,
+}
+
+type StyledText = Option<(Style, SmallString)>;
+
+pub struct BufferedBackend {
+    backend: Box<Backend>,
+    buf: RefCell<Buffer<StyledText>>,
+    current_style: RefCell<Style>,
+    rect_to_update: RefCell<Rect>,
 }
 
 fn background_style() -> Style {
@@ -40,6 +41,10 @@ fn background_style() -> Style {
             back: theme::Color::Dark(theme::BaseColor::Black),
         },
     }
+}
+
+fn default_styled_text() -> StyledText {
+    Some((background_style(), " ".into()))
 }
 
 fn write_effect(
@@ -68,46 +73,26 @@ fn write_effects(backend: &Backend, effects: &EnumSet<theme::Effect>, set: bool)
 impl BufferedBackend {
     pub fn new(backend: Box<Backend>) -> Self {
         let screen_size = backend.screen_size();
-        let w = screen_size.x;
-        let h = screen_size.y;
-        let style = background_style();
-        let buf = std::iter::repeat(Some((style, " ".into())))
-            .take(w as usize * h as usize)
-            .collect();
+        let buf = Buffer::new(screen_size, default_styled_text());
         BufferedBackend {
             backend,
             buf: RefCell::new(buf),
-            size: Cell::new(screen_size),
-            current_style: RefCell::new(style),
+            current_style: RefCell::new(background_style()),
             rect_to_update: RefCell::new(Rect::new()),
         }
     }
 
-    fn mark_all_for_update(&self) {
-        let mut rect = self.rect_to_update.borrow_mut();
-        let size = self.size.get();
-        rect.x_range = 0..size.x;
-        rect.y_range = 0..size.y;
-    }
-
-    fn mark_nothing_for_update(&self) {
-        let mut rect = self.rect_to_update.borrow_mut();
-        rect.reset();
-    }
-
     fn resize_and_clear(&self, new_style: Style) {
+        let mut buf = self.buf.borrow_mut();
+
         // first, resize the buffer to match the screen size
         let screen_size = self.backend.screen_size();
-        if screen_size != self.size.get() {
-            self.size.set(screen_size);
-            self.buf.borrow_mut().resize(
-                screen_size.x * screen_size.y,
-                Some((background_style(), " ".into())),
-            );
+        if screen_size != buf.size {
+            buf.resize(screen_size, default_styled_text());
         }
 
         // clear all cells
-        for cell in self.buf.borrow_mut().iter_mut() {
+        for cell in buf.buffer.iter_mut() {
             match *cell {
                 Some((ref mut style, ref mut text)) => {
                     *style = new_style;
@@ -120,7 +105,10 @@ impl BufferedBackend {
             }
         }
 
-        self.mark_all_for_update();
+        // mark all for update
+        let mut rect = self.rect_to_update.borrow_mut();
+        rect.x_range = 0..screen_size.x;
+        rect.y_range = 0..screen_size.y;
     }
 
     fn present(&mut self) {
@@ -130,7 +118,6 @@ impl BufferedBackend {
 
         let mut current_pos = Vec2::new(0, 0);
         let mut current_text = SmallString::new();
-        let size = self.size.get();
         let rect_to_update = self.rect_to_update.borrow().clone();
         for y in rect_to_update.y_range {
             current_pos.x = rect_to_update.x_range.start;
@@ -138,7 +125,7 @@ impl BufferedBackend {
             current_text.clear();
 
             for x in rect_to_update.x_range.clone() {
-                if let Some((style, ref text)) = buf[y * size.x + x] {
+                if let Some((style, ref text)) = *buf.get_item(x, y) {
                     if style != last_style {
                         self.output_to_backend(current_pos, &current_text, &last_style);
 
@@ -158,7 +145,10 @@ impl BufferedBackend {
 
         // Make sure everything is written out
         self.backend.refresh();
-        self.mark_nothing_for_update();
+
+        // mark nothing for update
+        let mut rect = self.rect_to_update.borrow_mut();
+        rect.reset();
     }
 
     fn output_to_backend(&self, pos: Vec2, text: &str, style: &Style) {
@@ -170,20 +160,28 @@ impl BufferedBackend {
     }
 
     fn output_to_buffer(&self, x: usize, y: usize, text: &str, style: Style) {
-        let size = self.size.get();
+        let mut buf = self.buf.borrow_mut();
+        let size = buf.size;
         if y < size.y {
-            let mut buf = self.buf.borrow_mut();
+            let mut rect_to_update = self.rect_to_update.borrow_mut();
             let mut x = x;
             for g in UnicodeSegmentation::graphemes(text, true) {
                 let width = UnicodeWidthStr::width(g);
                 if width > 0 {
                     if x < size.x {
-                        buf[y * size.x + x] = Some((style, g.into()));
+                        if buf.set_item(x, y, Some((style, g.into()))) == SetResult::DifferentValue
+                        {
+                            // mark position for update
+                            rect_to_update.encompass_pos(x, y);
+                        }
                     }
                     x += 1;
                     for _ in 0..(width - 1) {
                         if x < size.x {
-                            buf[y * size.x + x] = None;
+                            if buf.set_item(x, y, None) == SetResult::DifferentValue {
+                                // mark position for update
+                                rect_to_update.encompass_pos(x, y);
+                            }
                         }
                         x += 1;
                     }

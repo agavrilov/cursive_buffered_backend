@@ -21,4 +21,12 @@ impl Rect {
         self.x_range = EMPTY_RANGE;
         self.y_range = EMPTY_RANGE;
     }
+
+    pub fn encompass_pos(&mut self, x: usize, y: usize) {
+        self.x_range.start = usize::min(self.x_range.start, x);
+        self.x_range.end = usize::max(self.x_range.end, x + 1);
+
+        self.y_range.start = usize::min(self.y_range.start, y);
+        self.y_range.end = usize::max(self.y_range.end, y + 1);
+    }
 }
