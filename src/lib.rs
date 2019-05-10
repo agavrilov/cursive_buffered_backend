@@ -10,15 +10,20 @@ use std::cell::{Cell, RefCell};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+mod rect;
 mod smallstring;
 
+use rect::Rect;
 use smallstring::SmallString;
+
+type StyledText = Option<(Style, SmallString)>;
 
 pub struct BufferedBackend {
     backend: Box<Backend>,
-    buf: RefCell<Vec<Option<(Style, SmallString)>>>,
+    buf: RefCell<Vec<StyledText>>,
     size: Cell<Vec2>,
     current_style: RefCell<Style>,
+    rect_to_update: RefCell<Rect>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -74,7 +79,20 @@ impl BufferedBackend {
             buf: RefCell::new(buf),
             size: Cell::new(screen_size),
             current_style: RefCell::new(style),
+            rect_to_update: RefCell::new(Rect::new()),
         }
+    }
+
+    fn mark_all_for_update(&self) {
+        let mut rect = self.rect_to_update.borrow_mut();
+        let size = self.size.get();
+        rect.x_range = 0..size.x;
+        rect.y_range = 0..size.y;
+    }
+
+    fn mark_nothing_for_update(&self) {
+        let mut rect = self.rect_to_update.borrow_mut();
+        rect.reset();
     }
 
     fn resize_and_clear(&self, new_style: Style) {
@@ -101,6 +119,8 @@ impl BufferedBackend {
                 }
             }
         }
+
+        self.mark_all_for_update();
     }
 
     fn present(&mut self) {
@@ -111,13 +131,13 @@ impl BufferedBackend {
         let mut current_pos = Vec2::new(0, 0);
         let mut current_text = SmallString::new();
         let size = self.size.get();
-        for y in 0..size.y {
-            current_pos.x = 0;
+        let rect_to_update = self.rect_to_update.borrow().clone();
+        for y in rect_to_update.y_range {
+            current_pos.x = rect_to_update.x_range.start;
             current_pos.y = y;
             current_text.clear();
 
-            let mut x = 0;
-            while x < size.x {
+            for x in rect_to_update.x_range.clone() {
                 if let Some((style, ref text)) = buf[y * size.x + x] {
                     if style != last_style {
                         self.output_to_backend(current_pos, &current_text, &last_style);
@@ -129,8 +149,6 @@ impl BufferedBackend {
 
                     current_text.push_str(&text);
                 }
-
-                x += 1;
             }
 
             if !current_text.is_empty() {
@@ -140,10 +158,11 @@ impl BufferedBackend {
 
         // Make sure everything is written out
         self.backend.refresh();
+        self.mark_nothing_for_update();
     }
 
     fn output_to_backend(&self, pos: Vec2, text: &str, style: &Style) {
-        //eprintln!("text={:?}, style{:?}", text, style);
+        //debug!("text={:?}, style{:?}", text, style);
         write_effects(&*self.backend, &style.effects, true);
         self.backend.set_color(style.color_pair);
         self.backend.print_at(pos, &text);
