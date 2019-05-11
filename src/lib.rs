@@ -59,6 +59,28 @@ fn allocate_buffer(size: Vec2) -> Vec<StyledText> {
     buffer
 }
 
+fn resize_buffer(buf: &mut Vec<StyledText>, size: Vec2, new_style: Style) {
+    // first, resize the buffer to match the screen size
+    let new_length = size.x * size.y;
+    if buf.len() != new_length {
+        buf.resize(new_length, default_styled_text());
+    }
+
+    // clear all cells
+    for cell in buf.iter_mut() {
+        match *cell {
+            Some((ref mut style, ref mut text)) => {
+                *style = new_style;
+                text.clear();
+                text.push_str(" ");
+            }
+            _ => {
+                *cell = Some((new_style, " ".into()));
+            }
+        }
+    }
+}
+
 fn write_effect(
     backend: &Backend,
     effects: &EnumSet<theme::Effect>,
@@ -100,36 +122,20 @@ impl BufferedBackend {
         // clear write buffer
         {
             let mut buf = self.write_buffer.borrow_mut();
-
-            // first, resize the buffer to match the screen size
-            if screen_size != self.size.get() {
-                buf.resize(screen_size.x * screen_size.y, default_styled_text());
-            }
-
-            // clear all cells
-            for cell in buf.iter_mut() {
-                match *cell {
-                    Some((ref mut style, ref mut text)) => {
-                        *style = new_style;
-                        text.clear();
-                        text.push_str(" ");
-                    }
-                    _ => {
-                        *cell = Some((new_style, " ".into()));
-                    }
-                }
-            }
+            resize_buffer(&mut buf, screen_size, new_style);
         }
 
         // clear read buffer
         {
             let mut buf = self.read_buffer.borrow_mut();
-            buf.clear();
-            buf.resize(screen_size.x * screen_size.y, None);
+            resize_buffer(&mut buf, screen_size, new_style);
         }
+
+        self.size.set(screen_size);
     }
 
     fn output_all_to_backend(&mut self) {
+        debug!("output_all_to_backend started");
         {
             let write_buffer = self.write_buffer.borrow();
             let read_buffer = self.read_buffer.borrow();
@@ -153,6 +159,9 @@ impl BufferedBackend {
                     // skip it for output, but output the text already collected
                     if new_value == old_value {
                         self.output_to_backend(current_pos, &current_text, &last_style);
+                        if let Some((style, _)) = new_value {
+                            last_style = *style;
+                        }
                         current_pos.x = x;
                         current_text.clear();
                     } else {
@@ -179,12 +188,14 @@ impl BufferedBackend {
 
         // swap read and write buffers to compare against written content in future iterations
         self.write_buffer.swap(&self.read_buffer);
+
+        debug!("output_all_to_backend finished");
     }
 
     fn output_to_backend(&self, pos: Vec2, text: &str, style: &Style) {
         if !text.is_empty() {
             trace!(
-                "output_to_backend: pos={:?}, text={:?}, style{:?}",
+                "output_to_backend: pos={:?}, text={:?}, style={:?}",
                 pos,
                 text,
                 style
