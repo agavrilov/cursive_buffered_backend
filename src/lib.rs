@@ -137,10 +137,12 @@ impl BufferedBackend {
     fn output_all_to_backend(&mut self) {
         debug!("output_all_to_backend started");
         {
+            let default_style = background_style();
+
             let write_buffer = self.write_buffer.borrow();
             let read_buffer = self.read_buffer.borrow();
 
-            let mut last_style = background_style();
+            let mut last_style = default_style;
 
             let mut current_pos = Vec2::new(0, 0);
             let mut current_text = SmallString::new();
@@ -150,6 +152,7 @@ impl BufferedBackend {
                 current_pos.y = y;
                 current_text.clear();
 
+                let mut skipping = false;
                 for x in 0..size.x {
                     let pos = y * size.x + x;
                     let old_value = &read_buffer[pos];
@@ -158,13 +161,18 @@ impl BufferedBackend {
                     // if we have the same content on the screen (read buffer) as in the write buffer,
                     // skip it for output, but output the text already collected
                     if new_value == old_value {
+                        skipping = true;
                         self.output_to_backend(current_pos, &current_text, &last_style);
-                        if let Some((style, _)) = new_value {
-                            last_style = *style;
-                        }
-                        current_pos.x = x;
-                        current_text.clear();
                     } else {
+                        if skipping {
+                            skipping = false;
+
+                            // reset every collected stuff
+                            last_style = default_style;
+                            current_pos.x = x;
+                            current_text.clear();
+                        }
+
                         if let Some((style, ref text)) = new_value {
                             if *style != last_style {
                                 self.output_to_backend(current_pos, &current_text, &last_style);
