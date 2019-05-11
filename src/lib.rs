@@ -6,16 +6,12 @@ use cursive::event::Event;
 use cursive::theme;
 use cursive::Vec2;
 use enumset::EnumSet;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-mod buffer;
-mod rect;
 mod smallstring;
 
-use buffer::{Buffer, SetResult};
-use rect::Rect;
 use smallstring::SmallString;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -27,10 +23,20 @@ struct Style {
 type StyledText = Option<(Style, SmallString)>;
 
 pub struct BufferedBackend {
+    /// original backend
     backend: Box<Backend>,
-    buf: RefCell<Buffer<StyledText>>,
+
+    /// the buffer to write a new content to
+    write_buffer: RefCell<Vec<StyledText>>,
+
+    /// Content on the screen
+    read_buffer: RefCell<Vec<StyledText>>,
+
+    /// the size of the screen
+    size: Cell<Vec2>,
+
+    /// the current style
     current_style: RefCell<Style>,
-    rect_to_update: RefCell<Rect>,
 }
 
 fn background_style() -> Style {
@@ -45,6 +51,12 @@ fn background_style() -> Style {
 
 fn default_styled_text() -> StyledText {
     Some((background_style(), " ".into()))
+}
+
+fn allocate_buffer(size: Vec2) -> Vec<StyledText> {
+    let mut buffer: Vec<StyledText> = Vec::new();
+    buffer.resize(size.x * size.y, default_styled_text());
+    buffer
 }
 
 fn write_effect(
@@ -73,75 +85,91 @@ fn write_effects(backend: &Backend, effects: &EnumSet<theme::Effect>, set: bool)
 impl BufferedBackend {
     pub fn new(backend: Box<Backend>) -> Self {
         let screen_size = backend.screen_size();
-        let buf = Buffer::new(screen_size, default_styled_text());
         BufferedBackend {
             backend,
-            buf: RefCell::new(buf),
+            write_buffer: RefCell::new(allocate_buffer(screen_size)),
+            read_buffer: RefCell::new(allocate_buffer(screen_size)),
+            size: Cell::new(screen_size),
             current_style: RefCell::new(background_style()),
-            rect_to_update: RefCell::new(Rect::new()),
         }
     }
 
     fn resize_and_clear(&self, new_style: Style) {
-        let mut buf = self.buf.borrow_mut();
-
-        // first, resize the buffer to match the screen size
         let screen_size = self.backend.screen_size();
-        if screen_size != buf.size() {
-            buf.resize(screen_size, default_styled_text());
-        }
 
-        // clear all cells
-        for cell in buf.iter_mut() {
-            match *cell {
-                Some((ref mut style, ref mut text)) => {
-                    *style = new_style;
-                    text.clear();
-                    text.push_str(" ");
-                }
-                _ => {
-                    *cell = Some((new_style, " ".into()));
+        // clear write buffer
+        {
+            let mut buf = self.write_buffer.borrow_mut();
+
+            // first, resize the buffer to match the screen size
+            if screen_size != self.size.get() {
+                buf.resize(screen_size.x * screen_size.y, default_styled_text());
+            }
+
+            // clear all cells
+            for cell in buf.iter_mut() {
+                match *cell {
+                    Some((ref mut style, ref mut text)) => {
+                        *style = new_style;
+                        text.clear();
+                        text.push_str(" ");
+                    }
+                    _ => {
+                        *cell = Some((new_style, " ".into()));
+                    }
                 }
             }
         }
 
-        // mark all for update
-        let mut rect = self.rect_to_update.borrow_mut();
-        rect.x_range = 0..screen_size.x;
-        rect.y_range = 0..screen_size.y;
-
-        debug!("resize_and_clear: rect_to_update={:?}", rect);
+        // clear read buffer
+        {
+            let mut buf = self.read_buffer.borrow_mut();
+            buf.clear();
+            buf.resize(screen_size.x * screen_size.y, None);
+        }
     }
 
-    fn present(&mut self) {
-        let buf = self.buf.borrow();
+    fn output_all_to_backend(&mut self) {
+        {
+            let write_buffer = self.write_buffer.borrow();
+            let read_buffer = self.read_buffer.borrow();
 
-        let mut last_style = background_style();
+            let mut last_style = background_style();
 
-        let mut current_pos = Vec2::new(0, 0);
-        let mut current_text = SmallString::new();
-        let rect_to_update = self.rect_to_update.borrow().clone();
-        debug!("present: rect_to_update={:?}", rect_to_update);
-        for y in rect_to_update.y_range {
-            current_pos.x = rect_to_update.x_range.start;
-            current_pos.y = y;
-            current_text.clear();
+            let mut current_pos = Vec2::new(0, 0);
+            let mut current_text = SmallString::new();
+            let size = self.size.get();
+            for y in 0..size.y {
+                current_pos.x = 0;
+                current_pos.y = y;
+                current_text.clear();
 
-            for x in rect_to_update.x_range.clone() {
-                if let Some((style, ref text)) = *buf.get_item(x, y) {
-                    if style != last_style {
+                for x in 0..size.x {
+                    let pos = y * size.x + x;
+                    let old_value = &read_buffer[pos];
+                    let new_value = &write_buffer[pos];
+
+                    // if we have the same content on the screen (read buffer) as in the write buffer,
+                    // skip it for output, but output the text already collected
+                    if new_value == old_value {
                         self.output_to_backend(current_pos, &current_text, &last_style);
-
-                        last_style = style;
                         current_pos.x = x;
                         current_text.clear();
+                    } else {
+                        if let Some((style, ref text)) = new_value {
+                            if *style != last_style {
+                                self.output_to_backend(current_pos, &current_text, &last_style);
+
+                                last_style = *style;
+                                current_pos.x = x;
+                                current_text.clear();
+                            }
+
+                            current_text.push_str(&text);
+                        }
                     }
-
-                    current_text.push_str(&text);
                 }
-            }
 
-            if !current_text.is_empty() {
                 self.output_to_backend(current_pos, &current_text, &last_style);
             }
         }
@@ -149,57 +177,40 @@ impl BufferedBackend {
         // Make sure everything is written out
         self.backend.refresh();
 
-        // mark nothing for update
-        let mut rect = self.rect_to_update.borrow_mut();
-        rect.reset();
+        // swap read and write buffers to compare against written content in future iterations
+        self.write_buffer.swap(&self.read_buffer);
     }
 
     fn output_to_backend(&self, pos: Vec2, text: &str, style: &Style) {
-        trace!(
-            "output_to_backend: pos={:?}, text={:?}, style{:?}",
-            pos,
-            text,
-            style
-        );
-        write_effects(&*self.backend, &style.effects, true);
-        self.backend.set_color(style.color_pair);
-        self.backend.print_at(pos, &text);
-        write_effects(&*self.backend, &style.effects, false);
+        if !text.is_empty() {
+            trace!(
+                "output_to_backend: pos={:?}, text={:?}, style{:?}",
+                pos,
+                text,
+                style
+            );
+            write_effects(&*self.backend, &style.effects, true);
+            self.backend.set_color(style.color_pair);
+            self.backend.print_at(pos, &text);
+            write_effects(&*self.backend, &style.effects, false);
+        }
     }
 
     fn output_to_buffer(&self, x: usize, y: usize, text: &str, style: Style) {
-        let mut buf = self.buf.borrow_mut();
-        let size = buf.size();
+        let mut buf = self.write_buffer.borrow_mut();
+        let size = self.size.get();
         if y < size.y {
-            let mut rect_to_update = self.rect_to_update.borrow_mut();
-            debug!("output_to_buffer: rect_to_update={:?}", rect_to_update);
             let mut x = x;
             for g in UnicodeSegmentation::graphemes(text, true) {
                 let width = UnicodeWidthStr::width(g);
                 if width > 0 {
                     if x < size.x {
-                        let set_result = buf.set_item(x, y, Some((style, g.into())));
-                        debug!(
-                            "output_to_buffer: x={}, y={}, set_result={:?}",
-                            x, y, set_result
-                        );
-                        if set_result == SetResult::DifferentValue {
-                            // mark position for update
-                            rect_to_update.encompass_pos(x, y);
-                        }
+                        buf[y * size.x + x] = Some((style, g.into()));
                     }
                     x += 1;
                     for _ in 0..(width - 1) {
                         if x < size.x {
-                            let set_result = buf.set_item(x, y, None);
-                            debug!(
-                                "output_to_buffer: x={}, y={}, set_result={:?}",
-                                x, y, set_result
-                            );
-                            if set_result == SetResult::DifferentValue {
-                                // mark position for update
-                                rect_to_update.encompass_pos(x, y);
-                            }
+                            buf[y * size.x + x] = None;
                         }
                         x += 1;
                     }
@@ -227,7 +238,7 @@ impl Backend for BufferedBackend {
 
     /// Refresh the screen.
     fn refresh(&mut self) {
-        self.present();
+        self.output_all_to_backend();
     }
 
     /// Should return `true` if this backend supports colors.
