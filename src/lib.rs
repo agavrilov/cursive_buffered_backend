@@ -197,9 +197,9 @@ impl BufferedBackend {
     }
 
     fn output_to_buffer(&self, x: usize, y: usize, text: &str, style: Style) {
-        let mut buf = self.write_buffer.borrow_mut();
         let size = self.size.get();
         if y < size.y {
+            let mut buf = self.write_buffer.borrow_mut();
             let mut x = x;
             for g in UnicodeSegmentation::graphemes(text, true) {
                 let width = UnicodeWidthStr::width(g);
