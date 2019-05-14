@@ -49,36 +49,15 @@ fn background_style() -> Style {
     }
 }
 
-fn default_styled_text() -> StyledText {
-    Some((background_style(), " ".into()))
-}
-
-fn allocate_buffer(size: Vec2) -> Vec<StyledText> {
+fn allocate_buffer(size: Vec2, value: StyledText) -> Vec<StyledText> {
     let mut buffer: Vec<StyledText> = Vec::new();
-    buffer.resize(size.x * size.y, default_styled_text());
+    buffer.resize(size.x * size.y, value);
     buffer
 }
 
-fn resize_buffer(buf: &mut Vec<StyledText>, size: Vec2, new_style: Style) {
-    // first, resize the buffer to match the screen size
-    let new_length = size.x * size.y;
-    if buf.len() != new_length {
-        buf.resize(new_length, default_styled_text());
-    }
-
-    // clear all cells
-    for cell in buf.iter_mut() {
-        match *cell {
-            Some((ref mut style, ref mut text)) => {
-                *style = new_style;
-                text.clear();
-                text.push_str(" ");
-            }
-            _ => {
-                *cell = Some((new_style, " ".into()));
-            }
-        }
-    }
+fn resize_buffer(buf: &mut Vec<StyledText>, size: Vec2, value: StyledText) {
+    buf.clear();
+    buf.resize(size.x * size.y, value.clone());
 }
 
 fn write_effect(
@@ -109,8 +88,11 @@ impl BufferedBackend {
         let screen_size = backend.screen_size();
         BufferedBackend {
             backend,
-            write_buffer: RefCell::new(allocate_buffer(screen_size)),
-            read_buffer: RefCell::new(allocate_buffer(screen_size)),
+            write_buffer: RefCell::new(allocate_buffer(
+                screen_size,
+                Some((background_style(), " ".into())),
+            )),
+            read_buffer: RefCell::new(allocate_buffer(screen_size, None)),
             size: Cell::new(screen_size),
             current_style: RefCell::new(background_style()),
         }
@@ -122,13 +104,13 @@ impl BufferedBackend {
         // clear write buffer
         {
             let mut buf = self.write_buffer.borrow_mut();
-            resize_buffer(&mut buf, screen_size, new_style);
+            resize_buffer(&mut buf, screen_size, Some((new_style, " ".into())));
         }
 
         // clear read buffer
         {
             let mut buf = self.read_buffer.borrow_mut();
-            resize_buffer(&mut buf, screen_size, new_style);
+            resize_buffer(&mut buf, screen_size, None);
         }
 
         self.size.set(screen_size);
