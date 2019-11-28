@@ -24,7 +24,7 @@ type StyledText = Option<(Style, SmallString)>;
 
 pub struct BufferedBackend {
     /// original backend
-    backend: Box<Backend>,
+    backend: Box<dyn Backend>,
 
     /// the buffer to write a new content to
     write_buffer: RefCell<Vec<StyledText>>,
@@ -61,7 +61,7 @@ fn resize_buffer(buf: &mut Vec<StyledText>, size: Vec2, value: StyledText) {
 }
 
 fn write_effect(
-    backend: &Backend,
+    backend: &dyn Backend,
     effects: &EnumSet<theme::Effect>,
     effect: theme::Effect,
     set: bool,
@@ -75,7 +75,7 @@ fn write_effect(
     }
 }
 
-fn write_effects(backend: &Backend, effects: &EnumSet<theme::Effect>, set: bool) {
+fn write_effects(backend: &dyn Backend, effects: &EnumSet<theme::Effect>, set: bool) {
     write_effect(backend, &effects, theme::Effect::Simple, set);
     write_effect(backend, &effects, theme::Effect::Reverse, set);
     write_effect(backend, &effects, theme::Effect::Bold, set);
@@ -84,7 +84,7 @@ fn write_effects(backend: &Backend, effects: &EnumSet<theme::Effect>, set: bool)
 }
 
 impl BufferedBackend {
-    pub fn new(backend: Box<Backend>) -> Self {
+    pub fn new(backend: Box<dyn Backend>) -> Self {
         let screen_size = backend.screen_size();
         BufferedBackend {
             backend,
