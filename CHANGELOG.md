@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - ReleaseDate
+## [0.3.1] - 2019-12-03
 
 ## [0.3.1] - 2019-12-03
 ### Fixed
