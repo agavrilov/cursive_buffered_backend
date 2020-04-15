@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - ReleaseDate
+## [0.3.3] - 2020-04-15
 ### Changed
 - Bump _smallvec_ to >= 1
 - _Cursive_ should be 0.14 or less
