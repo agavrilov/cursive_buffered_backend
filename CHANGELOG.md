@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - ReleaseDate
+## [0.3.2] - 2020-04-15
 ### Changed
 - Fixed major versions of dependencies
 ## [0.3.1] - 2019-12-03
