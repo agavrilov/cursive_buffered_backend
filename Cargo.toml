@@ -11,11 +11,11 @@ description = "The buffering backend for any Cursive backend"
 edition = "2018"
 
 [dependencies]
-smallvec = ">=0"
-unicode-segmentation = ">=1"
-unicode-width = ">=0"
-enumset = ">=0"
-log = ">=0"
+smallvec = "0"
+unicode-segmentation = "1"
+unicode-width = "0"
+enumset = "0"
+log = "0"
 
 [dependencies.cursive]
 version = ">=0.11"
