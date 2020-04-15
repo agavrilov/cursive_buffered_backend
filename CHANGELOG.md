@@ -1,7 +1,8 @@
 # Changelog
 
-## [0.3.1] - 2019-12-03
-
+## [Unreleased] - ReleaseDate
+### Changed
+- Fixed major versions of dependencies
 ## [0.3.1] - 2019-12-03
 ### Fixed
 - Fixed warning: trait objects without an explicit `dyn` are deprecated
