@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased] - ReleaseDate
+### Changed
+- Bump _smallvec_ to >= 1
+- _Cursive_ should be 0.14 or less
 ## [0.3.2] - 2020-04-15
 ### Changed
 - Fixed major versions of dependencies
