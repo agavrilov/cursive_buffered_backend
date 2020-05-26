@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased] - ReleaseDate
+### Changed
+- Bump _enumset_ to >= 1
+- _Cursive_ should be 0.15 or more
 ## [0.3.3] - 2020-04-15
 ### Changed
 - Bump _smallvec_ to >= 1
