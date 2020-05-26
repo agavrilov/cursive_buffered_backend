@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased] - ReleaseDate
+
+## [0.4.0] - 2020-05-26
 ### Changed
 - Bump _enumset_ to >= 1
 - _Cursive_ should be 0.15 or more
