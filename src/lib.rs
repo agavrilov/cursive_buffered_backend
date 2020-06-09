@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate log;
 
+extern crate cursive_core as cursive;
+
 use cursive::backend::Backend;
 use cursive::event::Event;
 use cursive::theme;
