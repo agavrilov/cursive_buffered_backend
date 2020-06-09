@@ -17,9 +17,8 @@ unicode-width = "0"
 enumset = "1"
 log = "0"
 
-[dependencies.cursive]
-version = ">=0.15"
-default-features = false
+[dependencies.cursive_core]
+version = ">=0.1"
 
 [badges]
 travis-ci = { repository = "agavrilov/cursive_buffered_backend"}
