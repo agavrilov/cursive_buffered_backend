@@ -1,7 +1,8 @@
 # Changelog
 
 ## [Unreleased] - ReleaseDate
-
+### Changed
+- Depends on cursive_core
 ## [0.4.0] - 2020-05-26
 ### Changed
 - Bump _enumset_ to >= 1
