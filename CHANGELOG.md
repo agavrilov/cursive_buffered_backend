@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - ReleaseDate
+## [0.4.1] - 2020-06-17
 ### Changed
 - Depends on cursive_core
 ## [0.4.0] - 2020-05-26
