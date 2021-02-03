@@ -223,20 +223,17 @@ impl BufferedBackend {
     }
 }
 
-impl Backend for BufferedBackend {
-    fn poll_event(&mut self) -> Option<Event> {
-        self.backend.poll_event()
-    }
-
-    // TODO: take `self` by value?
-    // Or implement Drop?
-    /// Prepares to close the backend.
-    ///
-    /// This should clear any state in the terminal.
-    fn finish(&mut self) {
+impl Drop for BufferedBackend {
+    fn drop(&mut self) {
         trace!("Start finishing BufferedBackend");
         self.backend.finish();
         trace!("End finishing BufferedBackend");
+    }
+}
+
+impl Backend for BufferedBackend {
+    fn poll_event(&mut self) -> Option<Event> {
+        self.backend.poll_event()
     }
 
     /// Refresh the screen.

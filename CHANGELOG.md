@@ -1,5 +1,8 @@
 # Changelog
 
+## [Unreleased] - ReleaseDate
+### Changed
+- Fixed major versions of dependencies
 ## [0.4.1] - 2020-06-17
 ### Changed
 - Depends on cursive_core
