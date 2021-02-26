@@ -1,5 +1,8 @@
 # Changelog
 
+## [Unreleased] - ReleaseDate
+### Changed
+- Fix cursive-core to 0.1 for 0.4.* versions
 ## [0.4.1] - 2020-06-17
 ### Changed
 - Depends on cursive_core
