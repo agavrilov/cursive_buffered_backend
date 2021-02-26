@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - ReleaseDate
+## [0.4.2] - 2021-02-25
 ### Changed
 - Fix cursive-core to 0.1 for 0.4.* versions
 ## [0.4.1] - 2020-06-17
