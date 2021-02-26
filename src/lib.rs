@@ -2,6 +2,7 @@
 extern crate log;
 
 extern crate cursive_core as cursive;
+extern crate wasmer_enumset as enumset;
 
 use cursive::backend::Backend;
 use cursive::event::Event;
@@ -220,14 +221,6 @@ impl BufferedBackend {
                 }
             }
         }
-    }
-}
-
-impl Drop for BufferedBackend {
-    fn drop(&mut self) {
-        trace!("Start finishing BufferedBackend");
-        self.backend.finish();
-        trace!("End finishing BufferedBackend");
     }
 }
 

@@ -14,11 +14,11 @@ edition = "2018"
 smallvec = "1"
 unicode-segmentation = "1"
 unicode-width = "0"
-enumset = "1"
+wasmer_enumset = "1"
 log = "0"
 
 [dependencies.cursive_core]
-version = ">=0.2"
+version = "0.2"
 
 [badges]
 travis-ci = { repository = "agavrilov/cursive_buffered_backend"}
