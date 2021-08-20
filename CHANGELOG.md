@@ -1,5 +1,8 @@
 # Changelog
 
+## [Unreleased] - ReleaseDate
+### Changed
+- Update to '-alpha' version of 'cursive'
 ## [0.5.0] - 2021-02-25
 ### Changed
 - Use wasmer_enumset for cursive_core 0.2

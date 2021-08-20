@@ -1,6 +1,6 @@
 # cursive_buffered_backend
 
-[![crates.io](https://meritbadge.herokuapp.com/cursive_buffered_backend)](https://crates.io/crates/cursive_buffered_backend)
+[![crates.io](https://img.shields.io/crates/v/cursive_buffered_backend.svg)](https://crates.io/crates/cursive_buffered_backend)
 [![Build Status](https://travis-ci.com/agavrilov/cursive_buffered_backend.svg?branch=master)](https://travis-ci.com/agavrilov/cursive_buffered_backend)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
