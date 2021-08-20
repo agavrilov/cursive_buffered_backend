@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased] - ReleaseDate
+## [0.6.0-alpha.1] - 2021-08-20
 ### Changed
 - Update to '-alpha' version of 'cursive'
 ## [0.5.0] - 2021-02-25
