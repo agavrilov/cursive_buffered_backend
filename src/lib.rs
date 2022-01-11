@@ -228,6 +228,13 @@ impl Backend for BufferedBackend {
         self.backend.poll_event()
     }
 
+    /// Sets the title for the backend.
+    ///
+    /// This usually sets the terminal window title.
+    fn set_title(&mut self, title: String) {
+        self.backend.set_title(title)
+    }
+
     /// Refresh the screen.
     fn refresh(&mut self) {
         self.output_all_to_backend();
