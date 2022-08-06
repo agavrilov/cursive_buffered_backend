@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - ReleaseDate
+## [0.6.1] - 2022-08-06
 ### Changed
 - Fixed Clippy warning
 ## [0.6.0] - 2022-01-11
