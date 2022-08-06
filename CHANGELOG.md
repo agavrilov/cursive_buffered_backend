@@ -1,5 +1,8 @@
 # Changelog
 
+## [Unreleased] - ReleaseDate
+### Changed
+- Fixed Clippy warning
 ## [0.6.0] - 2022-01-11
 ### Changed
 - Update to cursive_core >= 0.3.1
