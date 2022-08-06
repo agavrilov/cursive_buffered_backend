@@ -1,5 +1,3 @@
-use std;
-
 use std::borrow::Borrow;
 use std::ops::Deref;
 use std::ptr;
@@ -67,15 +65,11 @@ impl SmallString {
         self.buffer.reserve(amt);
 
         ptr::copy(
-            self.buffer.as_ptr().offset(idx as isize),
-            self.buffer.as_mut_ptr().offset((idx + amt) as isize),
+            self.buffer.as_ptr().add(idx),
+            self.buffer.as_mut_ptr().add(idx + amt),
             len - idx,
         );
-        ptr::copy(
-            bytes.as_ptr(),
-            self.buffer.as_mut_ptr().offset(idx as isize),
-            amt,
-        );
+        ptr::copy(bytes.as_ptr(), self.buffer.as_mut_ptr().add(idx), amt);
         self.buffer.set_len(len + amt);
     }
 }

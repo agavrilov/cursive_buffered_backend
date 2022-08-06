@@ -59,7 +59,7 @@ fn allocate_buffer(size: Vec2, value: StyledText) -> Vec<StyledText> {
 
 fn resize_buffer(buf: &mut Vec<StyledText>, size: Vec2, value: StyledText) {
     buf.clear();
-    buf.resize(size.x * size.y, value.clone());
+    buf.resize(size.x * size.y, value);
 }
 
 fn write_effect(
@@ -78,11 +78,11 @@ fn write_effect(
 }
 
 fn write_effects(backend: &dyn Backend, effects: &EnumSet<theme::Effect>, set: bool) {
-    write_effect(backend, &effects, theme::Effect::Simple, set);
-    write_effect(backend, &effects, theme::Effect::Reverse, set);
-    write_effect(backend, &effects, theme::Effect::Bold, set);
-    write_effect(backend, &effects, theme::Effect::Italic, set);
-    write_effect(backend, &effects, theme::Effect::Underline, set);
+    write_effect(backend, effects, theme::Effect::Simple, set);
+    write_effect(backend, effects, theme::Effect::Reverse, set);
+    write_effect(backend, effects, theme::Effect::Bold, set);
+    write_effect(backend, effects, theme::Effect::Italic, set);
+    write_effect(backend, effects, theme::Effect::Underline, set);
 }
 
 impl BufferedBackend {
@@ -166,7 +166,7 @@ impl BufferedBackend {
                                 current_text.clear();
                             }
 
-                            current_text.push_str(&text);
+                            current_text.push_str(text);
                         }
                     }
                 }
@@ -194,7 +194,7 @@ impl BufferedBackend {
             );
             write_effects(&*self.backend, &style.effects, true);
             self.backend.set_color(style.color_pair);
-            self.backend.print_at(pos, &text);
+            self.backend.print_at(pos, text);
             write_effects(&*self.backend, &style.effects, false);
         }
     }
