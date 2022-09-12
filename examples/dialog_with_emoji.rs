@@ -10,6 +10,7 @@ fn main() -> Result<(), Error> {
         let backend = cursive::backends::crossterm::Backend::init()?;
         let buffered_backend = cursive_buffered_backend::BufferedBackend::new(backend);
         Ok(Box::new(buffered_backend))
+        //Ok(backend)
     };
 
     // Creates the cursive root - required for every application.
@@ -18,8 +19,8 @@ fn main() -> Result<(), Error> {
     // Creates a dialog with a single "Quit" button
     siv.add_layer(
         // Most views can be configured in a chainable way
-        Dialog::around(TextView::new("🖼️Preview"))
-            .button("🖼️Get", |_s| ())
+        Dialog::around(TextView::new("🖼️🖼️Preview"))
+            .button("🖼️🖼️Get", |_s| ())
             .button("Exit", |s| s.quit())
             .wrap_with(CircularFocus::new)
             .wrap_tab(),

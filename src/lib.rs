@@ -204,16 +204,20 @@ impl BufferedBackend {
         if y < size.y {
             let mut buf = self.write_buffer.borrow_mut();
             let mut x = x;
-            for g in UnicodeSegmentation::graphemes(text, true) {
+            'line_loop: for g in UnicodeSegmentation::graphemes(text, true) {
                 let width = UnicodeWidthStr::width(g);
                 if width > 0 {
                     if x < size.x {
                         buf[y * size.x + x] = Some((style, g.into()));
+                    } else {
+                        break 'line_loop;
                     }
                     x += 1;
                     for _ in 0..(width - 1) {
                         if x < size.x {
                             buf[y * size.x + x] = None;
+                        } else {
+                            break 'line_loop;
                         }
                         x += 1;
                     }
@@ -294,5 +298,24 @@ impl Backend for BufferedBackend {
     /// Mostly used for debugging.
     fn name(&self) -> &str {
         "buffered_backend"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn emoji_width() {
+        let width = UnicodeWidthStr::width("🖼️🖼️");
+        assert_eq!(2, width);
+    }
+
+    #[test]
+    fn emoji_segmentation() {
+        for g in UnicodeSegmentation::graphemes("🖼️🖼️", true) {
+            let width = UnicodeWidthStr::width(g);
+            assert_eq!(1, width);
+        }
     }
 }
