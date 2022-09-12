@@ -20,6 +20,9 @@ log = "0"
 [dependencies.cursive_core]
 version = ">=0.3.1"
 
+[dev-dependencies]
+cursive = {version = ">=0.20", default-features = false, features = ["crossterm-backend"]}
+
 [badges]
 travis-ci = { repository = "agavrilov/cursive_buffered_backend"}
 
