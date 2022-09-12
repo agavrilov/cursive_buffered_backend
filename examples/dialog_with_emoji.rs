@@ -1,11 +1,19 @@
+use std::io::Error;
+
 use cursive::{
     views::{CircularFocus, Dialog, TextView},
-    With as _,
+    Cursive, With as _,
 };
 
-fn main() {
+fn main() -> Result<(), Error> {
+    let backend_init = || -> std::io::Result<Box<dyn cursive::backend::Backend>> {
+        let backend = cursive::backends::crossterm::Backend::init()?;
+        let buffered_backend = cursive_buffered_backend::BufferedBackend::new(backend);
+        Ok(Box::new(buffered_backend))
+    };
+
     // Creates the cursive root - required for every application.
-    let mut siv = cursive::default();
+    let mut siv = Cursive::new();
 
     // Creates a dialog with a single "Quit" button
     siv.add_layer(
@@ -18,5 +26,5 @@ fn main() {
     );
 
     // Starts the event loop.
-    siv.run();
+    siv.try_run_with(backend_init)
 }
